@@ -3,24 +3,9 @@
 #include <unordered_map>
 #include <regex>
 #include <vector>
+#include "syntax_analyzer.cpp"
 
 using namespace std;
-
-enum TokenType
-{
-    Integer = 11, // or literal
-    Float = 12,
-    Long = 13,
-    Delimiter = 20, // ; for Vector and Matrixes
-    Identifier = 30,
-    Operator = 41,
-    Equals = 42,
-    OpenBracket = 51,
-    CloseBracket = 52,
-    OpenCurly = 53,
-    CloseCurly = 54,
-    Invalid = 99
-};
 
 string tokenTypeIdToString(TokenType tt){
     switch(tt){
@@ -53,14 +38,6 @@ string tokenTypeIdToString(TokenType tt){
     }
 }
 
-typedef TokenType DataType;
-
-struct Token
-{
-    std::string value;
-    TokenType type;
-};
-
 template <typename T> class Scalar{
 
 };
@@ -74,39 +51,40 @@ template <typename T> class Matrix{
 };
 
 struct{
-    std::unordered_map<std::string, DataType> dataTypeMap;
-    std::unordered_map<std::string, int> intMap;
-    std::unordered_map<std::string, float> floatMap;
-    std::unordered_map<std::string, long> longMap;
+    unordered_map<std::string, DataType> dataTypeMap;
+    unordered_map<std::string, int> intMap;
+    unordered_map<std::string, float> floatMap;
+    unordered_map<std::string, long> longMap;
 }Maps;
 
 struct{
-    std::regex varName = std::regex("^[A-Za-z][A-Za-z0-9]*$");
-    std::regex operators = std::regex("^(\\/=|\\+=|\\-=|\\*=|\\/|\\+|\\-|\\*)$");
-    std::regex longFloatRegex = std::regex("^[0-9]+\\.[0-9]+L;$");
-    std::regex floatRegex = std::regex("^[0-9]+\\.[0-9]+;$");
-    std::regex integerRegex = std::regex("^[0-9]+;$");
-
+    regex varName = std::regex("^[A-Za-z][A-Za-z0-9]*$");
+    regex operators = std::regex("^(\\/=|\\+=|\\-=|\\*=|\\/|\\+|\\-|\\*)$");
+    regex longFloatRegex = std::regex("^[0-9]+([,]*[0-9]+)*\\.[0-9]+([, ]*[0-9]+)*L$"); // not working
+    regex floatRegex = std::regex("^[0-9]+([,]*[0-9]+)*\\.[0-9]+([, ]*[0-9]+)*$");
+    regex integerRegex = std::regex("^[0-9]+([,]*[0-9]+)*$");
 }RegExes;
 
 std::string shift(std::vector<std::string> &src)
 {
-    std::string current = src.front();
+    string current = src.front();
     src.erase(src.begin());
     return current;
 }
 
 std::vector<std::string> splitString(const std::string &sourceCode) {
-    std::vector<std::string> words;
-    std::string word;
+    vector<std::string> words;
+    string word;
 
     for (char ch : sourceCode) {
-        if (ch != ' ') {
+        if(ch == '[' || ch == ']' || ch == '{' || ch == '}' || ch == ';' || ch == ','){
+            if(!word.empty()){ words.push_back(word); word.clear(); }
             word += ch;
-        }
-        else if(ch == '[' || ch == ']' || ch == '{' || ch == '}'){
             words.push_back(word);
             word.clear();
+        }
+        else if (ch != ' ') {
+            word += ch;
         }
         else if (!word.empty()) {
             words.push_back(word);
@@ -123,8 +101,8 @@ std::vector<std::string> splitString(const std::string &sourceCode) {
 }
 
 std::vector<Token> tokenize(std::string &sourceCode) {
-    std::vector<Token> tokens;
-    std::vector<std::string> src = splitString(sourceCode);
+    vector<Token> tokens;
+    vector<string> src = splitString(sourceCode);
 
     while (!src.empty()) {
         if(src.front() == "="){
@@ -174,8 +152,9 @@ int main(){
         getline(cin, currentLine);
         std::vector<Token> tokens = tokenize(currentLine);
         for(int i = 0; i < tokens.size(); i++){
-            cout << "Token value: " << tokens[i].value << ", type: " << tokenTypeIdToString(tokens[i].type) << endl;
+            cout << "Token value: '" << tokens[i].value << "', type: " << tokenTypeIdToString(tokens[i].type) << endl;
         }
+
     }
     return 0; 
 }
